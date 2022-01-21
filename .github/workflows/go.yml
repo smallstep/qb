@@ -39,9 +39,9 @@ jobs:
       run: go build -v ./...
     - name: Test
       run: go test -v -coverprofile=coverage.out ./...
-    - name: Codecov
-      uses: codecov/codecov-action@v2
-      with:
-        files: ./coverage.out  # optional
-        name: codecov-umbrella # optional
-        fail_ci_if_error: true # optional (default = false)
+    # - name: Codecov
+    #   uses: codecov/codecov-action@v2
+    #   with:
+    #     files: ./coverage.out  # optional
+    #     name: codecov-umbrella # optional
+    #     fail_ci_if_error: true # optional (default = false)
