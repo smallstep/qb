@@ -109,6 +109,34 @@ func TestQueryBuilder_SelectBy(t *testing.T) {
 	}
 }
 
+func TestQueryBuilder_SelectAll(t *testing.T) {
+	type fields struct {
+		Table         string
+		Columns       []string
+		SelectDeleted bool
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{"all", fields{"users", []string{"id", "name", "email", "created_at", "deleted_at"}, true}, "SELECT id, name, email, created_at, deleted_at FROM users"},
+		{"non deleted", fields{"users", []string{"id", "name", "email", "created_at", "deleted_at"}, false}, "SELECT id, name, email, created_at, deleted_at FROM users WHERE deleted_at IS NULL"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			q := &QueryBuilder{
+				Table:         tt.fields.Table,
+				Columns:       tt.fields.Columns,
+				SelectDeleted: tt.fields.SelectDeleted,
+			}
+			if got := q.SelectAll(); got != tt.want {
+				t.Errorf("QueryBuilder.SelectAll() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestQueryBuilder_InsertWithReturning(t *testing.T) {
 	type fields struct {
 		Table         string

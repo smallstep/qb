@@ -57,6 +57,14 @@ func (q *QueryBuilder) SelectBy(name string, extraNames ...string) string {
 	return s
 }
 
+// SelectAll returns a query to get all entries in a table.
+func (q *QueryBuilder) SelectAll() string {
+	if q.SelectDeleted {
+		return fmt.Sprintf("SELECT %s FROM %s", q.columns(), q.Table)
+	}
+	return fmt.Sprintf("SELECT %s FROM %s WHERE deleted_at IS NULL", q.columns(), q.Table)
+}
+
 // Insert returns the query to insert an record.
 func (q *QueryBuilder) Insert() string {
 	return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", q.Table, q.columns(), q.values())
