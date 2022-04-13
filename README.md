@@ -4,7 +4,9 @@ Just a simple SQL query builder for PostgreSQL.
 
 ## Get it
 
-GOPRIVATE=go.step.sm go get go.step.sm/qb
+```console
+go get go.step.sm/qb
+```
 
 ## Usage
 
