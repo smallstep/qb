@@ -1,3 +1,3 @@
 module go.step.sm/qb
 
-go 1.17
+go 1.19
