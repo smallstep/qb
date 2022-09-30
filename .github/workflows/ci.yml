@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+    branches:
+    - "master"
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: smallstep/workflows/.github/workflows/goCI.yml@main
+    with:
+      run-codeql: true
+    secrets: inherit
+

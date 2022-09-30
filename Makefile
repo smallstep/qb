@@ -2,7 +2,7 @@
 Q=$(if $V,,@)
 SRC=$(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
-all: lint test
+all: lint test build
 
 .PHONY: all
 
@@ -11,7 +11,9 @@ all: lint test
 #########################################
 
 bootstrap:
-	$Q GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.33.0
+	$Q curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin latest
+	$Q go install golang.org/x/vuln/cmd/govulncheck@latest
+	$Q go install gotest.tools/gotestsum@latest
 
 .PHONY: bootstrap
 
@@ -20,10 +22,10 @@ bootstrap:
 #########################################
 
 test:
-	$Q $(GOFLAGS) go test -coverprofile=coverage.out ./...
+	$Q gotestsum -- -coverprofile coverage.out ./...
 
 race:
-	$Q $(GOFLAGS) go test -race ./...
+	$Q gotestsum -- -race -coverprofile coverage.out ./...
 
 .PHONY: test race
 
@@ -32,10 +34,20 @@ race:
 #########################################
 
 fmt:
-	$Q gofmt -s -l -w $(SRC)
+	$Q goimports -l -w $(SRC)
 
+lint: SHELL:=/bin/bash
 lint:
-	$Q LOG_LEVEL=error golangci-lint run --timeout=30m
+	$Q LOG_LEVEL=error golangci-lint run --config <(curl -s https://raw.githubusercontent.com/smallstep/workflows/master/.golangci.yml) --timeout=30m
+	$Q govulncheck ./...
 
 .PHONY: lint fmt
 
+#########################################
+# Build
+#########################################
+
+build:
+	$Q go build ./...
+
+.PHONY: build
