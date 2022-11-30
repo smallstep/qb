@@ -25,7 +25,7 @@ func getTableName(name string) string {
 	b := new(strings.Builder)
 	for i, r := range name {
 		if unicode.IsUpper(r) && i != 0 {
-			b.WriteRune('_')
+			b.WriteByte('_')
 		}
 		b.WriteRune(unicode.ToLower(r))
 	}
