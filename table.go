@@ -22,7 +22,7 @@ func getTagValue(key string, f reflect.StructField) string {
 }
 
 func getTableName(name string) string {
-	b := new(strings.Builder)
+	var b strings.Builder
 	for i, r := range name {
 		if unicode.IsUpper(r) && i != 0 {
 			b.WriteByte('_')
@@ -32,7 +32,7 @@ func getTableName(name string) string {
 	return b.String()
 }
 
-func structOf(i interface{}) (reflect.Value, error) {
+func structOf(i any) (reflect.Value, error) {
 	v := reflect.ValueOf(i)
 	switch v.Kind() {
 	case reflect.Struct:
@@ -44,7 +44,7 @@ func structOf(i interface{}) (reflect.Value, error) {
 		}
 	}
 
-	return reflect.Value{}, fmt.Errorf("type %T is not an a struct", i)
+	return reflect.Value{}, fmt.Errorf("%T is neither struct nor does it point to one", i)
 }
 
 func fieldColumns(f reflect.StructField, o *options) []string {
@@ -76,7 +76,7 @@ func fieldColumns(f reflect.StructField, o *options) []string {
 	return columns
 }
 
-func getTable(i interface{}, o *options) (table, error) {
+func getTable(i any, o *options) (table, error) {
 	v, err := structOf(i)
 	if err != nil {
 		return table{}, err

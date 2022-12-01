@@ -55,7 +55,7 @@ func TestNew(t *testing.T) {
 	s := "string"
 
 	type args struct {
-		i    interface{}
+		i    any
 		opts []Option
 	}
 	tests := []struct {
@@ -89,12 +89,12 @@ func TestNew(t *testing.T) {
 			Columns:       []string{"id", "created_at", "deleted_at", "name", "email"},
 			SelectDeleted: false,
 		}, false},
-		{"ok with table name", args{&testTable{}, []Option{WithTableName("mytable")}}, &QueryBuilder{
+		{"ok with table name", args{&testTable{}, []Option{TableName("mytable")}}, &QueryBuilder{
 			Table:         "mytable",
 			Columns:       []string{"id", "name", "email"},
 			SelectDeleted: false,
 		}, false},
-		{"ok with options", args{testTable{}, []Option{WithTableTag("table"), WithColumnTag("col")}}, &QueryBuilder{
+		{"ok with options", args{testTable{}, []Option{TableTag("table"), WithColumnTag("col")}}, &QueryBuilder{
 			Table:         "foo",
 			Columns:       []string{"foo_id", "foo_name", "foo_email"},
 			SelectDeleted: false,
@@ -111,45 +111,16 @@ func TestNew(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("New() = %v, want %v", got, tt.want)
 			}
-		})
-	}
-}
 
-func TestMust(t *testing.T) {
-	type args struct {
-		i    interface{}
-		opts []Option
-	}
-	tests := []struct {
-		name      string
-		args      args
-		want      *QueryBuilder
-		wantPanic bool
-	}{
-		{"ok", args{testTable{}, nil}, &QueryBuilder{
-			Table:         "users",
-			Columns:       []string{"id", "name", "email"},
-			SelectDeleted: false,
-		}, false},
-		{"ok with options", args{testTable{}, []Option{WithTableName("foo"), WithTableTag("table"), WithColumnTag("col")}}, &QueryBuilder{
-			Table:         "foo",
-			Columns:       []string{"foo_id", "foo_name", "foo_email"},
-			SelectDeleted: false,
-		}, false},
-		{"fail", args{"not a struct", nil}, nil, true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
 			defer func() {
 				r := recover()
-				if r != nil != tt.wantPanic {
-					t.Errorf("Must() panic = %v, wantErr %v", r, tt.wantPanic)
+				if r != nil != tt.wantErr {
+					t.Errorf("Must() panic = %v, wantErr %v", r, tt.wantErr)
 				}
 			}()
-
-			got := Must(tt.args.i, tt.args.opts...)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("New() = %v, want %v", got, tt.want)
+			gotMust := Must(tt.args.i, tt.args.opts...)
+			if !reflect.DeepEqual(gotMust, tt.want) {
+				t.Errorf("Must() = %v, want %v", gotMust, tt.want)
 			}
 		})
 	}

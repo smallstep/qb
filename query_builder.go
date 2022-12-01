@@ -35,8 +35,8 @@ func defaultOptions() *options {
 // Option is the type used to pass options to the New and Must functions.
 type Option func(o *options)
 
-// WithTableName sets the table name to use.
-func WithTableName(name string) Option {
+// TableName sets the table name to use.
+func TableName(name string) Option {
 	return func(o *options) {
 		if name != "" {
 			o.tableName = name
@@ -44,9 +44,9 @@ func WithTableName(name string) Option {
 	}
 }
 
-// WithTableTag sets the tag key used to get the table name. It defaults to
+// TableTag sets the tag key used to get the table name. It defaults to
 // "dbtable".
-func WithTableTag(key string) Option {
+func TableTag(key string) Option {
 	return func(o *options) {
 		if key != "" {
 			o.tableTag = key
@@ -54,7 +54,7 @@ func WithTableTag(key string) Option {
 	}
 }
 
-// WithColumnTag sets the tag key used to get a column name. It defaults to
+// ColumnTag sets the tag key used to get a column name. It defaults to
 // "db".
 func WithColumnTag(key string) Option {
 	return func(o *options) {
@@ -67,7 +67,7 @@ func WithColumnTag(key string) Option {
 // New returns a new query builder configured with the fields tags in the given
 // struct. By default it uses the tag "dbtable" for the table name and "db" for
 // the column names.
-func New(i interface{}, opts ...Option) (*QueryBuilder, error) {
+func New(i any, opts ...Option) (*QueryBuilder, error) {
 	o := defaultOptions()
 	for _, fn := range opts {
 		fn(o)
@@ -84,7 +84,7 @@ func New(i interface{}, opts ...Option) (*QueryBuilder, error) {
 // the column names.
 //
 // Must will panic if i is not an struct.
-func Must(i interface{}, opts ...Option) *QueryBuilder {
+func Must(i any, opts ...Option) *QueryBuilder {
 	qb, err := New(i, opts...)
 	if err != nil {
 		panic(err)
