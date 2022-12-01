@@ -189,6 +189,18 @@ func (q *QueryBuilder) Update() string {
 	return fmt.Sprintf("UPDATE %s SET %s WHERE id = $%d", q.Table, join(v), pos)
 }
 
+// NamedUpdate returns the query to update a record using named values. Update
+// won't update neither the id nor the created_at column.
+func (q *QueryBuilder) NamedUpdate() string {
+	var values []string
+	for _, name := range q.Columns {
+		if name != idColumn && name != createdAtColumn {
+			values = append(values, name+" = :"+name)
+		}
+	}
+	return fmt.Sprintf("UPDATE %s SET %s WHERE id = :id", q.Table, join(values))
+}
+
 // Delete returns the query to mark a record as deleted.
 func (q *QueryBuilder) Delete() string {
 	return fmt.Sprintf("UPDATE %s SET deleted_at = $1 WHERE id = $2", q.Table)

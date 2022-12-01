@@ -326,7 +326,7 @@ func TestQueryBuilder_NamedInsert(t *testing.T) {
 		fields fields
 		want   string
 	}{
-		{"ok", fields{"users", []string{"id", "name", "email"}, false}, "INSERT INTO users (id, name, email) VALUES (:id, :name, :email)"},
+		{"ok", fields{"users", []string{"id", "name", "email", "created_at", "deleted_at"}, false}, "INSERT INTO users (id, name, email, created_at, deleted_at) VALUES (:id, :name, :email, :created_at, :deleted_at)"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -353,7 +353,7 @@ func TestQueryBuilder_NamedInsertWithReturning(t *testing.T) {
 		fields fields
 		want   string
 	}{
-		{"ok", fields{"users", []string{"id", "name", "email"}, false}, "INSERT INTO users (name, email) VALUES (:name, :email) RETURNING id"},
+		{"ok", fields{"users", []string{"id", "name", "email", "created_at", "deleted_at"}, false}, "INSERT INTO users (name, email, created_at, deleted_at) VALUES (:name, :email, :created_at, :deleted_at) RETURNING id"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -364,6 +364,33 @@ func TestQueryBuilder_NamedInsertWithReturning(t *testing.T) {
 			}
 			if got := q.NamedInsertWithReturning(); got != tt.want {
 				t.Errorf("QueryBuilder.NamedInsertWithReturning() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestQueryBuilder_NamedUpdate(t *testing.T) {
+	type fields struct {
+		Table         string
+		Columns       []string
+		SelectDeleted bool
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{"ok", fields{"users", []string{"id", "name", "email", "created_at", "deleted_at"}, false}, "UPDATE users SET name = :name, email = :email, deleted_at = :deleted_at WHERE id = :id"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			q := &QueryBuilder{
+				Table:         tt.fields.Table,
+				Columns:       tt.fields.Columns,
+				SelectDeleted: tt.fields.SelectDeleted,
+			}
+			if got := q.NamedUpdate(); got != tt.want {
+				t.Errorf("QueryBuilder.NamedUpdate() = %v, want %v", got, tt.want)
 			}
 		})
 	}
