@@ -9,6 +9,7 @@ import (
 const (
 	idColumn        = "id"
 	createdAtColumn = "created_at"
+	deletedAtColumn = "deleted_at"
 )
 
 // QueryBuilder provides a simple list of SQL queries that can be used by the
@@ -132,10 +133,10 @@ func (q *QueryBuilder) SelectBy(name string, extraNames ...string) string {
 
 // SelectAll returns a query to get all entries in a table.
 func (q *QueryBuilder) SelectAll() string {
-	if q.SelectDeleted {
-		return fmt.Sprintf("SELECT %s FROM %s", q.columns(), q.Table)
+	if !q.SelectDeleted {
+		return fmt.Sprintf("SELECT %s FROM %s WHERE deleted_at IS NULL", q.columns(), q.Table)
 	}
-	return fmt.Sprintf("SELECT %s FROM %s WHERE deleted_at IS NULL", q.columns(), q.Table)
+	return fmt.Sprintf("SELECT %s FROM %s", q.columns(), q.Table)
 }
 
 // Insert returns the query to insert a record.
@@ -204,6 +205,11 @@ func (q *QueryBuilder) NamedUpdate() string {
 // Delete returns the query to mark a record as deleted.
 func (q *QueryBuilder) Delete() string {
 	return fmt.Sprintf("UPDATE %s SET deleted_at = $1 WHERE id = $2", q.Table)
+}
+
+// HardDelete returns the query to delete a row by id.
+func (q *QueryBuilder) HardDelete() string {
+	return fmt.Sprintf("DELETE FROM %s WHERE id = $1", q.Table)
 }
 
 func (q *QueryBuilder) columns() string {
