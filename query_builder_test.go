@@ -366,3 +366,30 @@ func TestQueryBuilder_NamedUpdate(t *testing.T) {
 		})
 	}
 }
+
+func TestQueryBuilder_HardDelete(t *testing.T) {
+	type fields struct {
+		Table         string
+		Columns       []string
+		SelectDeleted bool
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{"ok", fields{"users", []string{"id", "name", "email", "created_at", "deleted_at"}, false}, "DELETE FROM users WHERE id = $1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			q := &QueryBuilder{
+				Table:         tt.fields.Table,
+				Columns:       tt.fields.Columns,
+				SelectDeleted: tt.fields.SelectDeleted,
+			}
+			if got := q.HardDelete(); got != tt.want {
+				t.Errorf("QueryBuilder.HardDelete() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
