@@ -11,7 +11,7 @@ type testInterface interface {
 }
 
 type testTable struct {
-	ID    string `dbtable:"users" db:"id" table:"foo" col:"foo_id"`
+	ID    string `dbtable:"users" db:"id" table:"foo" col:"foo_id,pkey"`
 	Name  string `db:"name" col:"foo_name"`
 	Email string `db:"email" col:"foo_email"`
 }
@@ -47,6 +47,12 @@ type testModelTypePtr struct {
 	Email      string `db:"email"`
 }
 
+type badModel struct {
+	ID    string `db:"id,pkey"`
+	Name  string `db:"name,pkey"`
+	Email string `db:"email"`
+}
+
 func TestNew(t *testing.T) {
 	testTableInterface := func() testInterface {
 		return &testTable{}
@@ -68,38 +74,67 @@ func TestNew(t *testing.T) {
 			Table:         "users",
 			Columns:       []string{"id", "name", "email"},
 			SelectDeleted: false,
+			PrimaryKey:    "id",
+			BindType:      DOLLAR,
 		}, false},
 		{"ok with interface", args{testTableInterface(), nil}, &QueryBuilder{
 			Table:         "users",
 			Columns:       []string{"id", "name", "email"},
 			SelectDeleted: false,
+			PrimaryKey:    "id",
+			BindType:      DOLLAR,
 		}, false},
 		{"ok with no name", args{testTableNoName{}, nil}, &QueryBuilder{
 			Table:         "test_table_no_name",
 			Columns:       []string{"id", "name", "email"},
 			SelectDeleted: false,
+			PrimaryKey:    "id",
+			BindType:      DOLLAR,
 		}, false},
 		{"ok with model", args{testModelType{}, nil}, &QueryBuilder{
 			Table:         "model",
 			Columns:       []string{"id", "created_at", "deleted_at", "name", "email"},
 			SelectDeleted: false,
+			PrimaryKey:    "id",
+			BindType:      DOLLAR,
 		}, false},
 		{"ok with model ptr", args{testModelTypePtr{string: &s}, nil}, &QueryBuilder{
 			Table:         "model",
 			Columns:       []string{"id", "created_at", "deleted_at", "name", "email"},
 			SelectDeleted: false,
+			PrimaryKey:    "id",
+			BindType:      DOLLAR,
 		}, false},
 		{"ok with table name", args{&testTable{}, []Option{TableName("mytable")}}, &QueryBuilder{
 			Table:         "mytable",
 			Columns:       []string{"id", "name", "email"},
 			SelectDeleted: false,
+			PrimaryKey:    "id",
+			BindType:      DOLLAR,
 		}, false},
-		{"ok with options", args{testTable{}, []Option{TableTag("table"), WithColumnTag("col")}}, &QueryBuilder{
+		{"ok with bind type", args{&testTable{}, []Option{BindType(QUESTION)}}, &QueryBuilder{
+			Table:         "users",
+			Columns:       []string{"id", "name", "email"},
+			SelectDeleted: false,
+			PrimaryKey:    "id",
+			BindType:      QUESTION,
+		}, false},
+		{"ok with options", args{testTable{}, []Option{TableTag("table"), ColumnTag("col"), BindType(QUESTION)}}, &QueryBuilder{
 			Table:         "foo",
 			Columns:       []string{"foo_id", "foo_name", "foo_email"},
 			SelectDeleted: false,
+			PrimaryKey:    "foo_id",
+			BindType:      QUESTION,
+		}, false},
+		{"ok with deprecated options", args{testTable{}, []Option{TableTag("table"), WithColumnTag("col")}}, &QueryBuilder{
+			Table:         "foo",
+			Columns:       []string{"foo_id", "foo_name", "foo_email"},
+			SelectDeleted: false,
+			PrimaryKey:    "foo_id",
+			BindType:      DOLLAR,
 		}, false},
 		{"fail", args{"not a struct", nil}, nil, true},
+		{"fail primary keys", args{badModel{}, nil}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -136,7 +171,13 @@ func TestNewQueryBuilder(t *testing.T) {
 		args args
 		want *QueryBuilder
 	}{
-		{"ok", args{"users", []string{"id", "name", "email"}}, &QueryBuilder{Table: "users", Columns: []string{"id", "name", "email"}, SelectDeleted: false}},
+		{"ok", args{"users", []string{"id", "name", "email"}}, &QueryBuilder{
+			Table:         "users",
+			Columns:       []string{"id", "name", "email"},
+			SelectDeleted: false,
+			PrimaryKey:    "id",
+			BindType:      DOLLAR,
+		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -152,6 +193,8 @@ func TestQueryBuilder_Queries(t *testing.T) {
 		Table         string
 		Columns       []string
 		SelectDeleted bool
+		PrimaryKey    string
+		BindType      BindParam
 	}
 	tests := []struct {
 		name   string
@@ -161,16 +204,21 @@ func TestQueryBuilder_Queries(t *testing.T) {
 		want2  string
 		want3  string
 	}{
-		{"selectDeleted", fields{"users", []string{"id", "name", "email", "created_at", "deleted_at"}, true},
+		{"selectDeleted", fields{"users", []string{"id", "name", "email", "created_at", "deleted_at"}, true, "", 0},
 			"SELECT id, name, email, created_at, deleted_at FROM users WHERE id = $1",
 			"INSERT INTO users (id, name, email, created_at, deleted_at) VALUES ($1, $2, $3, $4, $5)",
 			"UPDATE users SET name = $1, email = $2, deleted_at = $3 WHERE id = $4",
 			"UPDATE users SET deleted_at = $1 WHERE id = $2"},
-		{"noSelectDeleted", fields{"users", []string{"id", "name", "email", "created_at", "deleted_at"}, false},
-			"SELECT id, name, email, created_at, deleted_at FROM users WHERE id = $1 AND deleted_at IS NULL",
-			"INSERT INTO users (id, name, email, created_at, deleted_at) VALUES ($1, $2, $3, $4, $5)",
-			"UPDATE users SET name = $1, email = $2, deleted_at = $3 WHERE id = $4",
-			"UPDATE users SET deleted_at = $1 WHERE id = $2"},
+		{"selectWithCustomId", fields{"users", []string{"oid", "name", "email", "created_at", "deleted_at"}, true, "oid", DOLLAR},
+			"SELECT oid, name, email, created_at, deleted_at FROM users WHERE oid = $1",
+			"INSERT INTO users (oid, name, email, created_at, deleted_at) VALUES ($1, $2, $3, $4, $5)",
+			"UPDATE users SET name = $1, email = $2, deleted_at = $3 WHERE oid = $4",
+			"UPDATE users SET deleted_at = $1 WHERE oid = $2"},
+		{"noSelectDeleted", fields{"users", []string{"id", "name", "email", "created_at", "deleted_at"}, false, "id", QUESTION},
+			"SELECT id, name, email, created_at, deleted_at FROM users WHERE id = ? AND deleted_at IS NULL",
+			"INSERT INTO users (id, name, email, created_at, deleted_at) VALUES (?, ?, ?, ?, ?)",
+			"UPDATE users SET name = ?, email = ?, deleted_at = ? WHERE id = ?",
+			"UPDATE users SET deleted_at = ? WHERE id = ?"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -178,6 +226,8 @@ func TestQueryBuilder_Queries(t *testing.T) {
 				Table:         tt.fields.Table,
 				Columns:       tt.fields.Columns,
 				SelectDeleted: tt.fields.SelectDeleted,
+				PrimaryKey:    tt.fields.PrimaryKey,
+				BindType:      tt.fields.BindType,
 			}
 			got, got1, got2, got3 := q.Queries()
 			if got != tt.want {
